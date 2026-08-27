@@ -52,6 +52,17 @@ class AutomationManager: ObservableObject {
     }
     
     private func executeSequence(code: String) async -> Bool {
+        // 0. Activar la app de Duplicación del iPhone
+        guard let mirrorApp = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == "com.apple.ScreenContinuity" }) else {
+            DispatchQueue.main.async {
+                self.statusMessage = "Error: Duplicación del iPhone no está abierta."
+            }
+            return false
+        }
+        
+        mirrorApp.activate(options: .activateIgnoringOtherApps)
+        try? await Task.sleep(nanoseconds: 500_000_000) // Esperar medio segundo a que traiga la ventana al frente
+        
         // 1. Escribir el código la primera vez
         self.typeString(code)
         
@@ -109,9 +120,9 @@ class AutomationManager: ObservableObject {
     }
     
     private func clickRelative(xRatio: Double, yRatio: Double) -> Bool {
-        guard let windowFrame = getFrontmostWindowFrame() else {
+        guard let windowFrame = getMirroringWindowFrame() else {
             DispatchQueue.main.async {
-                self.statusMessage = "Error: No se pudo obtener la ventana activa."
+                self.statusMessage = "Error: No se pudo obtener la ventana de Duplicación."
             }
             return false
         }
@@ -129,8 +140,10 @@ class AutomationManager: ObservableObject {
         return true
     }
     
-    private func getFrontmostWindowFrame() -> CGRect? {
-        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
+    private func getMirroringWindowFrame() -> CGRect? {
+        guard let app = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == "com.apple.ScreenContinuity" }) else {
+            return nil
+        }
         let pid = app.processIdentifier
         
         // Método 1: CGWindowList (Más confiable si Accessibility API falla por estructura rara)
