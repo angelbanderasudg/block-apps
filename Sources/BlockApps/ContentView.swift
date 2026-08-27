@@ -14,18 +14,47 @@ struct ContentView: View {
     @State private var selectedOption: DurationOption = .preset(8.0)
     let presetOptions: [Double] = [2, 4, 8, 12, 24, 48, 72]
     
-    @State private var customHours: Int = 1
-    @State private var customMinutes: Int = 30
+    @AppStorage("savedNumberOfLimits") private var savedNumberOfLimits: Int = 1
+    @AppStorage("savedPresetHours") private var savedPresetHours: Double = 8.0
+    @AppStorage("savedIsCustom") private var savedIsCustom: Bool = false
+    @AppStorage("customHours") private var customHours: Int = 1
+    @AppStorage("customMinutes") private var customMinutes: Int = 30
     
     @State private var currentDate = Date()
     @State private var isCodeRevealed = false
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @State private var hasAccessibilityPermission: Bool = AXIsProcessTrusted()
+    let accessibilityTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text("BlockApps")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+        if !hasAccessibilityPermission {
+            VStack(spacing: 20) {
+                Image(systemName: "hand.raised.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(.orange)
+                Text("Se requiere Accesibilidad")
+                    .font(.title)
+                    .bold()
+                Text("BlockApps necesita controlar el ratón para configurar los límites en la Duplicación del iPhone.")
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                Button("Otorgar Permiso") {
+                    let options: NSDictionary = ["AXTrustedCheckOptionPrompt": true]
+                    AXIsProcessTrustedWithOptions(options)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            }
+            .padding()
+            .frame(minWidth: 400, minHeight: 520)
+            .onReceive(accessibilityTimer) { _ in
+                hasAccessibilityPermission = AXIsProcessTrusted()
+            }
+        } else {
+            VStack(spacing: 20) {
+                Text("BlockApps")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
             
             if let revealDate = codeManager.currentRevealDate {
                 if currentDate < revealDate {
@@ -157,6 +186,11 @@ struct ContentView: View {
                     }
                 }
                 
+                Stepper(value: $automationManager.numberOfLimits, in: 0...50) {
+                    Text("Cantidad de límites a bloquear: \(automationManager.numberOfLimits)")
+                }
+                .padding(.bottom, 10)
+                
                 Button("Iniciar configuración") {
                     let finalDuration: Double
                     switch selectedOption {
@@ -183,37 +217,8 @@ struct ContentView: View {
                 }
                 .font(.footnote)
                 .padding(.top)
-                
-                if showingSettings {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Coordenadas Relativas (0.0 a 1.0)")
-                            .font(.headline)
-                        
-                        HStack {
-                            Text("Cancelar X:")
-                            Slider(value: $automationManager.cancelXRatio, in: 0...1)
-                            Text(String(format: "%.2f", automationManager.cancelXRatio))
-                        }
-                        HStack {
-                            Text("Cancelar Y:")
-                            Slider(value: $automationManager.cancelYRatio, in: 0...1)
-                            Text(String(format: "%.2f", automationManager.cancelYRatio))
-                        }
-                        
-                        HStack {
-                            Text("Omitir X:")
-                            Slider(value: $automationManager.skipXRatio, in: 0...1)
-                            Text(String(format: "%.2f", automationManager.skipXRatio))
-                        }
-                        HStack {
-                            Text("Omitir Y:")
-                            Slider(value: $automationManager.skipYRatio, in: 0...1)
-                            Text(String(format: "%.2f", automationManager.skipYRatio))
-                        }
-                    }
-                    .padding()
-                    .background(Color.secondary.opacity(0.1))
-                    .cornerRadius(8)
+                .sheet(isPresented: $showingSettings) {
+                    SettingsView(automationManager: automationManager)
                 }
             }
         }
@@ -221,6 +226,27 @@ struct ContentView: View {
         .frame(minWidth: 400, minHeight: 520)
         .onReceive(timer) { input in
             currentDate = input
+        }
+        .onAppear {
+            automationManager.numberOfLimits = savedNumberOfLimits
+            if savedIsCustom {
+                selectedOption = .custom
+            } else {
+                selectedOption = .preset(savedPresetHours)
+            }
+        }
+        .onChange(of: automationManager.numberOfLimits) { newValue in
+            savedNumberOfLimits = newValue
+        }
+        .onChange(of: selectedOption) { newValue in
+            switch newValue {
+            case .preset(let hrs):
+                savedIsCustom = false
+                savedPresetHours = hrs
+            case .custom:
+                savedIsCustom = true
+            }
+        }
         }
     }
 }

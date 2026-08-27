@@ -32,7 +32,15 @@ El proyecto está creado utilizando el **Swift Package Manager**. Esto lo hace s
 4. ¡Rápido! Tienes unos segundos de cuenta regresiva. Haz clic en la ventana de **Duplicación del iPhone** para ponerla en primer plano.
 5. Suelta el ratón y el teclado; BlockApps tecleará el código y hará clic en omitir para terminar la configuración.
 
-Si notas que la aplicación hace los clics ligeramente por encima o por debajo de los botones de "Cancelar" / "Omitir", abre la pestaña de **Configuración Avanzada** en la app y ajusta la proporción del eje `Y` o `X` de 0.0 (inicio) a 1.0 (final de la ventana).
+Si notas que la aplicación hace los clics ligeramente por encima o por debajo de los botones de la interfaz, puedes ajustarlos:
+1. Abre la pestaña de **Configuración Avanzada (Coordenadas)** en la app.
+2. Cada paso del proceso (Botón Cancelar, Omitir, Límites, etc.) tiene un control deslizable de `X` y `Y` de 0.0 (inicio) a 1.0 (final de la ventana).
+3. Cada paso cuenta con una imagen de referencia. Puedes hacer clic en las imágenes para verlas en **pantalla completa** (y cerrarlas con otro clic).
+4. El botón de **Probar** te permite lanzar una simulación instantánea del clic con los valores actuales, para que puedas calibrar cada coordenada visualmente sobre el iPhone duplicado sin necesidad de ejecutar toda la secuencia completa.
+
+> [!WARNING]
+> **Limitación en Xcode (Imágenes):** 
+> Al ejecutar el proyecto directamente desde Xcode, es posible que las imágenes de referencia en la Configuración Avanzada no se muestren y aparezcan como "Sin imagen". Esto se debe a la resolución de rutas relativas durante la compilación en Xcode. **No te preocupes:** la aplicación es completamente funcional y, una vez que la empaquetes en el `.dmg`, las imágenes cargarán correctamente.
 
 ## Generar el archivo ejecutable Instalable (.dmg) 📦
 

@@ -11,6 +11,17 @@ class AutomationManager: ObservableObject {
     @Published var skipXRatio: Double = 0.5
     @Published var skipYRatio: Double = 0.6
     
+    // Limits automation config
+    @Published var numberOfLimits: Int = 1
+    @Published var limitsMenuYRatio: Double = 0.75
+    @Published var firstListItemYRatio: Double = 0.35
+    @Published var listItemHeightRatio: Double = 0.08
+    @Published var blockToggleYRatio: Double = 0.47
+    @Published var backButtonXRatio: Double = 0.10
+    @Published var backButtonYRatio: Double = 0.15
+    @Published var statusBarXRatio: Double = 0.20
+    @Published var statusBarYRatio: Double = 0.07
+    
     // Configurable delays
     @Published var delayBeforeTyping: Double = 3.0
     @Published var delayBetweenTyping: Double = 1.0
@@ -63,28 +74,65 @@ class AutomationManager: ObservableObject {
         mirrorApp.activate(options: .activateIgnoringOtherApps)
         try? await Task.sleep(nanoseconds: 500_000_000) // Esperar medio segundo a que traiga la ventana al frente
         
-        // 1. Escribir el código la primera vez
+        // --- Fase 1: Configurar código de tiempo en pantalla ---
         self.typeString(code)
-        
-        // 2. Esperar (ej. 1 segundo)
         try? await Task.sleep(nanoseconds: UInt64(self.delayBetweenTyping * 1_000_000_000))
-        
-        // 3. Escribir el código la segunda vez
         self.typeString(code)
         
-        // 4. Esperar (ej. 3 segundos) a que aparezca la recuperación de cuenta Apple
         try? await Task.sleep(nanoseconds: UInt64(self.delayBeforeCancel * 1_000_000_000))
-        
-        // 5. Clic en "Cancelar"
         let cancelSuccess = self.clickRelative(xRatio: self.cancelXRatio, yRatio: self.cancelYRatio)
         if !cancelSuccess { return false }
         
-        // 6. Esperar (ej. 1 segundo) a que aparezca la alerta "¿Quieres continuar?"
         try? await Task.sleep(nanoseconds: UInt64(self.delayBeforeSkip * 1_000_000_000))
-        
-        // 7. Clic en "Omitir"
         let skipSuccess = self.clickRelative(xRatio: self.skipXRatio, yRatio: self.skipYRatio)
         if !skipSuccess { return false }
+        
+        // Si no hay límites configurados, terminar aquí
+        if self.numberOfLimits == 0 {
+            self.statusMessage = "¡Automatización completada (Sin límites)!"
+            return true
+        }
+        
+        // --- Fase 2: Bloquear límites de apps ---
+        self.statusMessage = "Fase 2: Bloqueando límites..."
+        try? await Task.sleep(nanoseconds: 2_000_000_000) // Esperar regreso al menú
+        
+        // Clic en la barra superior para Scroll Up
+        _ = self.clickRelative(xRatio: self.statusBarXRatio, yRatio: self.statusBarYRatio)
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        
+        // Clic en "Límites para apps"
+        _ = self.clickRelative(xRatio: 0.5, yRatio: self.limitsMenuYRatio)
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        
+        for i in 0..<self.numberOfLimits {
+            let itemY = self.firstListItemYRatio + (Double(i) * self.listItemHeightRatio)
+            
+            // Clic en el elemento de la lista
+            _ = self.clickRelative(xRatio: 0.5, yRatio: itemY)
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            
+            // El primero pide el código
+            if i == 0 {
+                self.typeString(code)
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+            }
+            
+            // Clic en "Bloquear al terminar límite"
+            _ = self.clickRelative(xRatio: 0.85, yRatio: self.blockToggleYRatio)
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            
+            // Clic en "< Regresar"
+            _ = self.clickRelative(xRatio: self.backButtonXRatio, yRatio: self.backButtonYRatio)
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+        }
+        
+        // Salir del menú de límites
+        _ = self.clickRelative(xRatio: self.backButtonXRatio, yRatio: self.backButtonYRatio)
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        
+        // Tercer click en regresar (para salir completamente al menú inicial)
+        _ = self.clickRelative(xRatio: self.backButtonXRatio, yRatio: self.backButtonYRatio)
         
         self.statusMessage = "¡Automatización completada!"
         return true
@@ -116,6 +164,21 @@ class AutomationManager: ObservableObject {
         case "8": return 28
         case "9": return 25
         default: return nil
+        }
+    }
+    
+    func testClick(xRatio: Double, yRatio: Double) {
+        guard let mirrorApp = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == "com.apple.ScreenContinuity" }) else {
+            self.statusMessage = "Error: Duplicación del iPhone no está abierta."
+            return
+        }
+        
+        mirrorApp.activate(options: .activateIgnoringOtherApps)
+        
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            let success = self.clickRelative(xRatio: xRatio, yRatio: yRatio)
+            self.statusMessage = success ? "Clic de prueba exitoso" : "Error en el clic de prueba"
         }
     }
     

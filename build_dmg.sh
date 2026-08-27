@@ -40,6 +40,11 @@ fi
 # Copiar el ejecutable
 cp .build/release/"$APP_NAME" "$APP_DIR/Contents/MacOS/"
 
+# Copiar recursos (imágenes)
+if [ -d "Assets" ]; then
+    cp Assets/*.png "$APP_DIR/Contents/Resources/" 2>/dev/null || true
+fi
+
 # Crear Info.plist con metadata y referencia al icono
 cat > "$APP_DIR/Contents/Info.plist" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
