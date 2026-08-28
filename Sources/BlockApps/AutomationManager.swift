@@ -99,7 +99,7 @@ class AutomationManager: ObservableObject {
         
         // Clic en la barra superior para Scroll Up
         _ = self.clickRelative(xRatio: self.statusBarXRatio, yRatio: self.statusBarYRatio)
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
         
         // Clic en "Límites para apps"
         _ = self.clickRelative(xRatio: 0.5, yRatio: self.limitsMenuYRatio)
