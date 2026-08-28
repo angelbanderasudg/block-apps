@@ -4,6 +4,10 @@ BlockApps es una aplicación de macOS diseñada para interactuar con la **Duplic
 
 La aplicación generará un código seguro de 4 dígitos, lo escribirá automáticamente en la pantalla del iPhone y lo guardará en un historial oculto durante un período de tiempo definido por ti (ej. 8 horas).
 
+## Video Tutorial 📺
+
+[![Tutorial Video](https://img.youtube.com/vi/3tXUCl5rpIA/0.jpg)](https://www.youtube.com/watch?v=3tXUCl5rpIA)
+
 ## ¿Cómo funciona la automatización? 🤖
 
 Dado que la "Duplicación del iPhone" es una transmisión de video y macOS no detecta los botones nativos del sistema de iOS, **BlockApps utiliza eventos sintéticos de sistema** para funcionar:
